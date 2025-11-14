@@ -11,9 +11,10 @@ class GymDisplayController extends Controller
 {
     public function __invoke(Request $request): View
     {
-        $school = $request->user()->school ?? School::findOrFail($request->get('school_id'));
+        $school = $this->resolveSchool($request);
 
         $lanes = Checkin::with(['driver', 'calls.student'])
+            ->where('school_id', $school->id)
             ->orderBy('lane')
             ->orderBy('position')
             ->get()
@@ -31,6 +32,42 @@ class GymDisplayController extends Controller
             'school' => $school,
             'lanes' => $lanes,
         ]);
+    }
+
+    protected function resolveSchool(Request $request): School
+    {
+        if ($request->user()->isDistrictAdmin()) {
+            // Priority: URL parameter > Session > First school
+            $schoolId = null;
+            
+            if ($request->has('school_id') && $request->filled('school_id')) {
+                $schoolId = (int) $request->input('school_id');
+            } elseif (session()->has('district_admin_school_id')) {
+                $schoolId = session('district_admin_school_id');
+            } else {
+                $schoolId = School::query()->value('id');
+                // Set default school in session if none selected
+                if ($schoolId) {
+                    session(['district_admin_school_id' => $schoolId]);
+                }
+            }
+
+            if (!$schoolId || $schoolId === 0) {
+                abort(404, 'No school available. Please create a school first.');
+            }
+
+            return School::findOrFail($schoolId);
+        }
+
+        if ($request->user()?->school) {
+            return $request->user()->school;
+        }
+
+        if ($request->filled('school_id')) {
+            return School::findOrFail($request->integer('school_id'));
+        }
+
+        return School::query()->firstOrFail();
     }
 }
 

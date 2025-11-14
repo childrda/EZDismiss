@@ -7,14 +7,22 @@ use App\Events\QueueUpdated;
 use App\Models\Checkin;
 use App\Models\Driver;
 use App\Models\School;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 
 class QueueService
 {
-    public function manualCheckin(School $school, Driver $driver, int $lane, ?int $position = null): Checkin
+    public function manualCheckin(School $school, Driver $driver, int $lane, ?int $insertPosition = null): Checkin
     {
-        return DB::transaction(function () use ($school, $driver, $lane, $position): Checkin {
-            $position = $position ?? $this->nextPosition($school, $lane);
+        return DB::transaction(function () use ($school, $driver, $lane, $insertPosition): Checkin {
+            if ($insertPosition !== null) {
+                // Insert at a specific position - shift existing checkins
+                $this->shiftPositions($school, $lane, $insertPosition);
+                $position = $insertPosition;
+            } else {
+                // Append to the end
+                $position = $this->nextPosition($school, $lane);
+            }
 
             $checkin = Checkin::create([
                 'school_id' => $school->id,
@@ -24,11 +32,27 @@ class QueueService
                 'position' => $position,
             ]);
 
-            CheckinCreated::dispatch($checkin);
-            QueueUpdated::dispatch($school, $lane);
+            // Broadcast events immediately
+            broadcast(new CheckinCreated($checkin));
+            broadcast(new QueueUpdated($school, $lane));
 
             return $checkin;
         });
+    }
+
+    protected function shiftPositions(School $school, int $lane, int $insertPosition): void
+    {
+        // Get all checkins in this lane that need to be shifted
+        $checkinsToShift = Checkin::where('school_id', $school->id)
+            ->where('lane', $lane)
+            ->where('position', '>=', $insertPosition)
+            ->orderBy('position')
+            ->get();
+
+        // Shift each checkin's position by 1
+        foreach ($checkinsToShift as $checkin) {
+            $checkin->update(['position' => $checkin->position + 1]);
+        }
     }
 
     public function nextPosition(School $school, int $lane): int

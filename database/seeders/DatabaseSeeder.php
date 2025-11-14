@@ -56,20 +56,20 @@ class DatabaseSeeder extends Seeder
         $schools->each(function (School $school, int $index) use (&$driverCounter): void {
             $admin = User::factory()->forSchool($school->id, 'school_admin')->create([
                 'name' => "{$school->name} Admin",
-                'email' => "admin{$index + 1}@example.com",
+                'email' => 'admin'.($index + 1).'@example.com',
                 'password' => Hash::make('password'),
             ]);
 
             $staff = User::factory()->forSchool($school->id, 'staff')->create([
                 'name' => "{$school->name} Staff",
-                'email' => "staff{$index + 1}@example.com",
+                'email' => 'staff'.($index + 1).'@example.com',
                 'password' => Hash::make('password'),
             ]);
 
             $teachers = collect(range(1, 2))->map(function ($num) use ($school) {
                 return User::factory()->forSchool($school->id, 'teacher')->create([
                     'name' => "{$school->name} Teacher {$num}",
-                    'email' => "teacher{$school->id}{$num}@example.com",
+                    'email' => 'teacher'.$school->id.$num.'@example.com',
                     'password' => Hash::make('password'),
                 ]);
             });
@@ -96,10 +96,10 @@ class DatabaseSeeder extends Seeder
                 $driver = Driver::create([
                     'school_id' => $school->id,
                     'name' => "Driver {$driverCounter}",
-                    'email' => "driver{$driverCounter}@example.com",
-                    'phone' => "555-03{$driverCounter}",
+                    'email' => 'driver'.$driverCounter.'@example.com',
+                    'phone' => '555-03'.$driverCounter,
                     'vehicle_desc' => 'Blue SUV',
-                    'external_id' => "P{$driverCounter}",
+                    'external_id' => 'P'.$driverCounter,
                     'tag_uid' => strtoupper(Str::random(8)),
                 ]);
 

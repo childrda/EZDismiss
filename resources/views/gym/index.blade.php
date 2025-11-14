@@ -2,9 +2,11 @@
 
 @section('content')
     <div class="space-y-6">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">Gym Pickup Display</h1>
-            <p class="text-sm text-slate-500">School: {{ $school->name }}</p>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">Gym Pickup Display</h1>
+                <p class="text-sm text-slate-500">School: {{ $school->name }}</p>
+            </div>
         </div>
 
         <div class="space-y-6">

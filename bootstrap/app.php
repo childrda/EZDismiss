@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\AddCorsHeaders;
+use App\Http\Middleware\AuthenticateRfidApiKey;
 use App\Http\Middleware\DistrictAdminOnly;
 use App\Http\Middleware\ScopeSchoolData;
 use App\Http\Middleware\SchoolAdminOnly;
+use App\Http\Middleware\SetSchoolContext;
 use App\Http\Middleware\StaffOnly;
 use App\Http\Middleware\TeacherOnly;
 use Illuminate\Foundation\Application;
@@ -23,10 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'school.admin' => SchoolAdminOnly::class,
             'teacher' => TeacherOnly::class,
             'staff' => StaffOnly::class,
+            'rfid.api.key' => AuthenticateRfidApiKey::class,
+            'school.context' => SetSchoolContext::class,
         ]);
 
         $middleware->appendToGroup('web', 'scope.school');
-        $middleware->appendToGroup('api', 'scope.school');
+        // Don't apply scope.school to API routes - they handle tenant scope differently
+        $middleware->appendToGroup('api', AddCorsHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

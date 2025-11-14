@@ -20,7 +20,16 @@
         <div class="grid gap-4 md:grid-cols-2">
             @foreach ($imports as $type => $label)
                 <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="mb-3 text-lg font-semibold text-slate-800">{{ $label }}</div>
+                    <div class="mb-3 flex items-center justify-between">
+                        <div class="text-lg font-semibold text-slate-800">{{ $label }}</div>
+                        <a 
+                            href="{{ route('import.sample', $type) }}" 
+                            class="text-xs text-blue-600 hover:text-blue-700 hover:underline"
+                            download
+                        >
+                            📥 Sample CSV
+                        </a>
+                    </div>
                     <form method="POST" action="{{ route('admin.import.preview', $type) }}" enctype="multipart/form-data" class="space-y-3">
                         @csrf
                         <input type="file" name="file" accept=".csv,text/csv" required class="w-full rounded border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none">

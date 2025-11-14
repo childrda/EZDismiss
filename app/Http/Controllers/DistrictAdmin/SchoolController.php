@@ -78,6 +78,13 @@ class SchoolController extends Controller
         return redirect()->route('district.schools.index')->with('status', 'School updated.');
     }
 
+    public function manage(School $school): View
+    {
+        return view('district.schools.manage', [
+            'school' => $school,
+        ]);
+    }
+
     public function destroy(School $school): RedirectResponse
     {
         // Placeholder for soft disabling schools once the flag exists.

@@ -39,7 +39,10 @@
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $school->api_key ?? 'Not set' }}</td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{{ route('district.schools.edit', $school) }}" class="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Edit</a>
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('district.schools.edit', $school) }}" class="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Edit Settings</a>
+                                    <a href="{{ route('district.schools.manage', $school) }}" class="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700">Manage School Data</a>
+                                </div>
                             </td>
                         </tr>
                     @empty

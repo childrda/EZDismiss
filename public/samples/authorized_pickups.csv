@@ -1,0 +1,7 @@
+parent_id,student_powerschool_id,relationship,expires_at
+PAR001,123456,Father,
+PAR002,123457,Mother,
+PAR003,123458,Father,
+PAR004,123459,Mother,
+PAR005,123460,Father,
+

@@ -15,19 +15,87 @@
                 <div class="p-6 text-xl font-semibold text-blue-600 flex items-center justify-between">
                     {{ config('app.name', 'CarLineManager') }}
                 </div>
+                
+                @auth
+                    <div class="px-6 pb-4 border-b border-slate-200">
+                        <div class="text-sm font-medium text-slate-900">{{ auth()->user()->name }}</div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            @if(auth()->user()->isDistrictAdmin())
+                                District Admin
+                            @elseif(auth()->user()->isSchoolAdmin())
+                                School Admin
+                                @if(auth()->user()->school)
+                                    • {{ auth()->user()->school->name }}
+                                @endif
+                            @elseif(auth()->user()->isTeacher())
+                                Teacher
+                                @if(auth()->user()->school)
+                                    • {{ auth()->user()->school->name }}
+                                @endif
+                            @elseif(auth()->user()->isStaff())
+                                Staff
+                                @if(auth()->user()->school)
+                                    • {{ auth()->user()->school->name }}
+                                @endif
+                            @endif
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">{{ auth()->user()->email }}</div>
+                    </div>
+                @endauth
+                
                 <nav class="flex-1 px-4 space-y-2">
-                    <a href="{{ route('queue.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('queue.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Queue</a>
-                    <a href="{{ route('gym.display') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('gym.display') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Gym Display</a>
-                    <a href="{{ route('mobile.entry') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('mobile.entry*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Mobile Entry</a>
+                    @php
+                        $user = auth()->user();
+                        $teacherHomeroom = $user?->teacherHomeroom();
+                    @endphp
 
-                    @can('viewAny', App\Models\Student::class)
-                        <div class="mt-4 text-xs uppercase tracking-wide text-slate-400">Admin</div>
-                        <a href="{{ route('admin.dashboard') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">School Admin</a>
-                    @endcan
+                    @if($user && ($user->isStaff() || $user->isSchoolAdmin() || $user->isDistrictAdmin()))
+                        @if($user->isDistrictAdmin())
+                            @php
+                                $schools = \App\Models\School::orderBy('name')->get();
+                                $selectedSchoolId = session('district_admin_school_id', $schools->first()?->id);
+                            @endphp
+                            <div class="mb-4">
+                                <label class="mb-2 block text-xs font-medium text-slate-500">Select School</label>
+                                <form method="POST" action="{{ route('district.select-school') }}" class="mb-2">
+                                    @csrf
+                                    <select name="school_id" onchange="this.form.submit()" class="w-full rounded border border-slate-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none">
+                                        @foreach($schools as $school)
+                                            <option value="{{ $school->id }}" {{ $school->id == $selectedSchoolId ? 'selected' : '' }}>{{ $school->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </div>
+                        @endif
+                        <a href="{{ route('queue.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('queue.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Queue</a>
+                        <a href="{{ route('gym.display') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('gym.display') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Gym Display</a>
+                        <a href="{{ route('mobile.entry') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('mobile.entry*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Mobile Entry</a>
+                    @endif
 
-                    @if(auth()->user()?->isDistrictAdmin())
-                        <div class="mt-4 text-xs uppercase tracking-wide text-slate-400">District</div>
-                        <a href="{{ route('district.dashboard') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">District Admin</a>
+                    @if($user && $user->isTeacher() && $teacherHomeroom)
+                        <a href="{{ route('classroom.show', $teacherHomeroom) }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('classroom.show') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Classroom</a>
+                    @endif
+
+                    @if($user && $user->isSchoolAdmin())
+                        <div class="mt-4 text-xs uppercase tracking-wide text-slate-400">School Admin</div>
+                        <a href="{{ route('admin.dashboard') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Dashboard</a>
+                        <a href="{{ route('admin.students.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.students.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Students</a>
+                        <a href="{{ route('admin.drivers.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.drivers.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Drivers</a>
+                        <a href="{{ route('admin.homerooms.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.homerooms.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Homerooms</a>
+                        <a href="{{ route('admin.authorized-pickups.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.authorized-pickups.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Authorized Pickups</a>
+                        <a href="{{ route('admin.rfid-readers.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.rfid-readers.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">RFID Readers</a>
+                        <a href="{{ route('admin.import.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.import.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Import</a>
+                        <a href="{{ route('admin.logs.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('admin.logs.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Activity Logs</a>
+                    @endif
+
+                    @if($user && $user->isDistrictAdmin())
+                        <div class="mt-4 text-xs uppercase tracking-wide text-slate-400">District Admin</div>
+                        <a href="{{ route('district.dashboard') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.dashboard') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Dashboard</a>
+                        <a href="{{ route('district.schools.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.schools.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Schools</a>
+                        <a href="{{ route('district.users.index') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.users.*') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Users</a>
+                        <a href="{{ route('district.settings') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.settings') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Settings</a>
+                        <a href="{{ route('district.logs') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.logs') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">Activity Logs</a>
+                        <a href="{{ route('district.powerschool') }}" class="block rounded px-3 py-2 hover:bg-blue-50 {{ request()->routeIs('district.powerschool') ? 'bg-blue-100 text-blue-700' : 'text-slate-600' }}">PowerSchool Import</a>
                     @endif
                 </nav>
                 <form method="POST" action="{{ route('logout') }}" class="p-4">
@@ -38,8 +106,18 @@
 
             <main class="flex-1">
                 <header class="bg-white shadow-sm md:hidden">
-                    <div class="flex items-center justify-between px-4 py-3">
-                        <div class="text-lg font-semibold text-blue-600">{{ config('app.name', 'CarLineManager') }}</div>
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                        <div>
+                            <div class="text-lg font-semibold text-blue-600">{{ config('app.name', 'CarLineManager') }}</div>
+                            @auth
+                                <div class="text-xs text-slate-600 mt-0.5">
+                                    {{ auth()->user()->name }}
+                                    @if(auth()->user()->school)
+                                        • {{ auth()->user()->school->name }}
+                                    @endif
+                                </div>
+                            @endauth
+                        </div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="rounded bg-red-500 px-3 py-1 text-sm text-white">Logout</button>

@@ -87,6 +87,29 @@ class User extends Authenticatable
         return $this->role === 'staff';
     }
 
+    public function teacherHomeroom(): ?Homeroom
+    {
+        if (!$this->isTeacher() || !$this->school_id) {
+            return null;
+        }
+
+        // First try to find by teacher_id (new way)
+        $homeroom = Homeroom::query()
+            ->where('school_id', $this->school_id)
+            ->where('teacher_id', $this->id)
+            ->first();
+
+        // Fallback to teacher_name matching (for backward compatibility)
+        if (!$homeroom) {
+            $homeroom = Homeroom::query()
+                ->where('school_id', $this->school_id)
+                ->where('teacher_name', $this->name)
+                ->first();
+        }
+
+        return $homeroom;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $user): void {

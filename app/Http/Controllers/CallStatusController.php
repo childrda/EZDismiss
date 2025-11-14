@@ -8,6 +8,7 @@ use App\Models\Call;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Broadcast;
 
 class CallStatusController extends Controller
 {
@@ -28,8 +29,8 @@ class CallStatusController extends Controller
         ]);
 
         $call->loadMissing('checkin.school');
-        CallUpdated::dispatch($call);
-        QueueUpdated::dispatch($call->checkin->school, $call->checkin->lane);
+        broadcast(new CallUpdated($call));
+        broadcast(new QueueUpdated($call->checkin->school, $call->checkin->lane));
 
         $this->logger->log('queue_status_change', 'Call status updated', [
             'call_id' => $call->id,

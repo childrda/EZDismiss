@@ -19,11 +19,17 @@ class Homeroom extends Model
         'school_id',
         'name',
         'teacher_name',
+        'teacher_id',
     ];
 
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function teacher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'teacher_id');
     }
 
     public function students(): HasMany

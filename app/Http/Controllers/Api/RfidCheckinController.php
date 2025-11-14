@@ -14,6 +14,7 @@ use App\Services\QueueService;
 use App\Support\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,21 +28,27 @@ class RfidCheckinController extends Controller
 
     public function checkinByReader(Request $request): JsonResponse
     {
+        // Get reader from middleware (authenticated via API key)
+        $reader = $request->attributes->get('rfid_reader');
+        
+        if (!$reader) {
+            return response()->json([
+                'message' => 'Reader not found.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $reader->load('school');
+        
         $data = $request->validate([
-            'reader_id' => ['required', 'integer', 'exists:rfid_readers,id'],
             'tag_uid' => ['required', 'string'],
         ]);
 
-        $reader = RfidReader::with('school')->findOrFail($data['reader_id']);
         $school = $reader->school;
 
         Tenant::set($school->id);
 
-        if (!$reader->enabled) {
-            return response()->json([
-                'message' => 'Reader is disabled.',
-            ], Response::HTTP_FORBIDDEN);
-        }
+        // Update last seen timestamp (reader is already validated as enabled in middleware)
+        $reader->update(['last_seen_at' => now()]);
 
         $driver = Driver::where('school_id', $school->id)
             ->where('tag_uid', $data['tag_uid'])
@@ -156,8 +163,31 @@ class RfidCheckinController extends Controller
                 'position' => $position,
             ]);
 
-            CheckinCreated::dispatch($checkin);
-            QueueUpdated::dispatch($school, $lane);
+            // Automatically add all students linked to this driver
+            $driver->load('authorizedPickups.student');
+            $linkedStudentIds = $driver->authorizedPickups
+                ->pluck('student_id')
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            foreach ($linkedStudentIds as $studentId) {
+                $student = \App\Models\Student::where('id', $studentId)
+                    ->where('school_id', $school->id)
+                    ->first();
+
+                if ($student) {
+                    $checkin->calls()->create([
+                        'school_id' => $school->id,
+                        'student_id' => $studentId,
+                        'status' => 'called',
+                    ]);
+                }
+            }
+
+            // Broadcast events immediately
+            broadcast(new CheckinCreated($checkin));
+            broadcast(new QueueUpdated($school, $lane));
 
             return $checkin;
         });

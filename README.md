@@ -7,18 +7,18 @@ CarLineManager delivers multi-school car rider dismissal management with per-ten
 - Multi-school tenancy with district, school admin, teacher, and staff roles
 - Color-coded live queue, classroom dashboard, gym display, and mobile drag-and-drop entry
 - RFID reader support with Sanctum-secured API endpoints (mode A/B)
-- Queue broadcasting over Laravel WebSockets (`school.{school_id}` channels)
+- Queue broadcasting over Laravel Reverb (`school.{school_id}` channels)
 - CSV imports (students, parents, teachers, homerooms, authorized pickups) with preview + summary
 - Tenant-scoped activity logging for RFID scans, manual inserts, queue actions, imports, and more
 - Admin panels for school management; district portal for cross-school oversight
 
 ### Tech Stack
 
-- Laravel 12, PHP 8.2, MySQL
+- Laravel 11, PHP 8.2, MySQL
 - Laravel Breeze style authentication (custom login provided; breeze install optional)
 - Tailwind CSS, Blade, Alpine.js for UI
 - Laravel Sanctum for API auth tokens
-- beyondcode/laravel-websockets for realtime queue updates
+- Laravel Reverb for realtime queue updates
 
 ## Local Setup
 
@@ -31,27 +31,31 @@ php artisan migrate --seed
 npm run build # or npm run dev for Vite dev server
 ```
 
-### WebSockets
+### Real-time Updates (Laravel Reverb)
 
-1. Ensure `.env` contains:
+1. Configure the broadcast driver and credentials in `.env`:
 
 ```
-BROADCAST_DRIVER=websockets
-WEBSOCKETS_KEY=local
-WEBSOCKETS_SECRET=secret
-WEBSOCKETS_APP_ID=carline
-WEBSOCKETS_PORT=6001
-WEBSOCKETS_HOST=127.0.0.1
-WEBSOCKETS_SCHEME=http
+BROADCAST_DRIVER=reverb
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+REVERB_APP_ID=carline
+REVERB_APP_KEY=local
+REVERB_APP_SECRET=secret
+VITE_REVERB_HOST=${REVERB_HOST}
+VITE_REVERB_PORT=${REVERB_PORT}
+VITE_REVERB_SCHEME=${REVERB_SCHEME}
+VITE_REVERB_APP_KEY=${REVERB_APP_KEY}
 ```
 
-2. Start the websocket server:
+2. Start the Reverb server:
 
 ```bash
-php artisan websockets:serve
+php artisan reverb:start
 ```
 
-3. Run the Laravel queue worker if using queued broadcasting:
+3. Run the Laravel queue worker if you broadcast via queue:
 
 ```bash
 php artisan queue:listen
@@ -122,12 +126,12 @@ Preview shows create/update/skip counts and highlights errors. Successful import
 
 - `php artisan test` (add tests as flows are expanded)
 - Validate RFIDs with sample payloads (ensure reader/tag exist)
-- Confirm websockets broadcasting: open `/queue`, perform manual insert, verify real-time updates
+- Confirm Reverb broadcasting: open `/queue`, perform manual insert, verify real-time updates
 
 ## Scripts
 
 - Migrate & seed: `php artisan migrate --seed`
-- WebSockets server: `php artisan websockets:serve`
+- Reverb server: `php artisan reverb:start`
 - Queue worker (if needed): `php artisan queue:listen`
 - Vite dev server: `npm run dev`
 

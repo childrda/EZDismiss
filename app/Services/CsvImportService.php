@@ -97,10 +97,45 @@ class CsvImportService
                     ]);
 
                     if (!empty($row['homeroom'])) {
+                        $teacherId = null;
+                        
+                        // Try to link to teacher User account if teacher_email is provided
+                        if (!empty($row['teacher_email'])) {
+                            $teacher = User::where('email', $row['teacher_email'])
+                                ->where('school_id', $school->id)
+                                ->where('role', 'teacher')
+                                ->first();
+                            
+                            if ($teacher) {
+                                $teacherId = $teacher->id;
+                            }
+                        }
+                        
+                        // If no teacher_email or teacher not found, try matching by teacher_name
+                        if (!$teacherId && !empty($row['teacher_name'])) {
+                            $teacher = User::where('name', $row['teacher_name'])
+                                ->where('school_id', $school->id)
+                                ->where('role', 'teacher')
+                                ->first();
+                            
+                            if ($teacher) {
+                                $teacherId = $teacher->id;
+                            }
+                        }
+                        
                         $homeroom = Homeroom::firstOrCreate(
                             ['school_id' => $school->id, 'name' => $row['homeroom']],
-                            ['teacher_name' => $row['teacher_name'] ?? null],
+                            [
+                                'teacher_name' => $row['teacher_name'] ?? null,
+                                'teacher_id' => $teacherId,
+                            ],
                         );
+                        
+                        // Update teacher_id if it wasn't set initially but we now have a match
+                        if ($homeroom->teacher_id !== $teacherId && $teacherId) {
+                            $homeroom->update(['teacher_id' => $teacherId]);
+                        }
+                        
                         $student->homeroom()->associate($homeroom);
                     }
 
@@ -290,9 +325,38 @@ class CsvImportService
                 $action = $homeroom ? 'updated' : 'created';
 
                 if (!$dryRun) {
+                    $teacherId = null;
+                    
+                    // Try to link to teacher User account if teacher_email is provided
+                    if (!empty($row['teacher_email'])) {
+                        $teacher = User::where('email', $row['teacher_email'])
+                            ->where('school_id', $school->id)
+                            ->where('role', 'teacher')
+                            ->first();
+                        
+                        if ($teacher) {
+                            $teacherId = $teacher->id;
+                        }
+                    }
+                    
+                    // If no teacher_email or teacher not found, try matching by teacher_name
+                    if (!$teacherId && !empty($row['teacher_name'])) {
+                        $teacher = User::where('name', $row['teacher_name'])
+                            ->where('school_id', $school->id)
+                            ->where('role', 'teacher')
+                            ->first();
+                        
+                        if ($teacher) {
+                            $teacherId = $teacher->id;
+                        }
+                    }
+                    
                     $homeroom = Homeroom::updateOrCreate(
                         ['school_id' => $school->id, 'name' => $name],
-                        ['teacher_name' => $row['teacher_name'] ?? null],
+                        [
+                            'teacher_name' => $row['teacher_name'] ?? null,
+                            'teacher_id' => $teacherId,
+                        ],
                     );
                 }
 

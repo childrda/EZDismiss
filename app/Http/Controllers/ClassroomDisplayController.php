@@ -38,6 +38,8 @@ class ClassroomDisplayController extends Controller
                 'lane' => $call?->checkin?->lane,
                 'status' => $status,
                 'indicator' => $indicator,
+                'call_id' => $call?->id, // Include call_id for status updates
+                'in_queue' => $call !== null && $status !== 'released', // Show if student is in queue and not released
             ];
         });
 

@@ -1,0 +1,7 @@
+parent_id,name,email,phone,vehicle_desc,tag_uid,student_ids,relationship
+PAR001,Robert Doe,robert.doe@example.com,555-0101,Blue Honda Accord,ABC123,123456,Father
+PAR002,Mary Smith,mary.smith@example.com,555-0102,Red Toyota Camry,DEF456,123457,Mother
+PAR003,David Johnson,david.j@example.com,555-0103,Black Ford F-150,GHI789,123458,Father
+PAR004,Lisa Williams,lisa.w@example.com,555-0104,Silver Nissan Altima,JKL012,123459,Mother
+PAR005,Chris Davis,chris.d@example.com,555-0105,White Chevrolet Tahoe,MNO345,123460,Father
+

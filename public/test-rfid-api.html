@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFID API Test - Mode A</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .code-block {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .url-display {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 RFID Scanner API Test (Mode A)</h1>
+        
+        <div class="form-group">
+            <label>Base URL:</label>
+            <input type="text" id="baseUrl" value="http://localhost/EZDismiss/public" placeholder="http://localhost/EZDismiss/public">
+            <small style="color: #666;">Base URL with /public folder (e.g., http://localhost/EZDismiss/public for XAMPP)</small>
+        </div>
+
+        <div class="form-group">
+            <label>API Key (from RFID Reader):</label>
+            <input type="text" id="apiKey" placeholder="Enter your RFID reader API key" required>
+            <small style="color: #666;">This should match the api_key in your rfid_readers table</small>
+        </div>
+
+        <div class="form-group">
+            <label>Tag UID:</label>
+            <input type="text" id="tagUid" placeholder="ABC123456" required>
+            <small style="color: #666;">The RFID tag UID from the scanned card</small>
+        </div>
+
+        <button onclick="testApi()">Test API Call</button>
+
+        <div id="response"></div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h3>Request Details:</h3>
+            <div class="url-display" id="requestUrl">POST /api/rfid/checkin</div>
+            
+            <h4>Headers:</h4>
+            <div class="code-block" id="requestHeaders">
+X-API-Key: {your_api_key}
+Content-Type: application/json
+Accept: application/json
+            </div>
+
+            <h4>Body:</h4>
+            <div class="code-block" id="requestBody">
+{
+    "tag_uid": "{tag_uid}"
+}
+            </div>
+
+            <h4>cURL Command:</h4>
+            <div class="code-block" id="curlCommand">
+                curl -X POST http://localhost/EZDismiss/public/api/rfid/checkin \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"tag_uid": "ABC123456"}'
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateRequestDetails() {
+            let baseUrl = document.getElementById('baseUrl').value || 'http://localhost';
+            // Remove trailing slash if present
+            baseUrl = baseUrl.replace(/\/$/, '');
+            // Remove /api/rfid/checkin if accidentally included
+            baseUrl = baseUrl.replace(/\/api\/rfid\/checkin\/?$/, '');
+            const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
+            const tagUid = document.getElementById('tagUid').value || '{tag_uid}';
+
+            document.getElementById('requestUrl').textContent = `POST ${baseUrl}/api/rfid/checkin`;
+            document.getElementById('requestHeaders').textContent = 
+                `X-API-Key: ${apiKey}\nContent-Type: application/json\nAccept: application/json`;
+            document.getElementById('requestBody').textContent = 
+                JSON.stringify({ tag_uid: tagUid }, null, 2);
+            const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+            document.getElementById('curlCommand').textContent = 
+                `curl -X POST ${cleanBaseUrl}/api/rfid/checkin \\\n` +
+                `  -H "X-API-Key: ${apiKey}" \\\n` +
+                `  -H "Content-Type: application/json" \\\n` +
+                `  -H "Accept: application/json" \\\n` +
+                `  -d '${JSON.stringify({ tag_uid: tagUid })}'`;
+        }
+
+        document.getElementById('baseUrl').addEventListener('input', updateRequestDetails);
+        document.getElementById('apiKey').addEventListener('input', updateRequestDetails);
+        document.getElementById('tagUid').addEventListener('input', updateRequestDetails);
+
+        async function testApi() {
+            const baseUrl = document.getElementById('baseUrl').value || 'http://localhost';
+            const apiKey = document.getElementById('apiKey').value;
+            const tagUid = document.getElementById('tagUid').value;
+            const responseDiv = document.getElementById('response');
+
+            if (!apiKey || !tagUid) {
+                responseDiv.className = 'error';
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = 'Please fill in both API Key and Tag UID';
+                return;
+            }
+
+            responseDiv.className = 'info';
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = 'Sending request...';
+
+            // Ensure baseUrl doesn't end with a slash and doesn't include the API path
+            let cleanBaseUrl = baseUrl.replace(/\/$/, '');
+            cleanBaseUrl = cleanBaseUrl.replace(/\/api\/rfid\/checkin\/?$/, '');
+            const url = `${cleanBaseUrl}/api/rfid/checkin`;
+            
+            console.log('Request URL:', url); // Debug log
+            const payload = {
+                tag_uid: tagUid
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': apiKey,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                responseDiv.style.display = 'block';
+                
+                if (response.ok) {
+                    responseDiv.className = 'success';
+                    responseDiv.textContent = 
+                        `✅ Success (${response.status})\n\n` +
+                        JSON.stringify(data, null, 2) +
+                        `\n\n📋 Response Headers:\n` +
+                        Array.from(response.headers.entries())
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join('\n');
+                } else {
+                    responseDiv.className = 'error';
+                    responseDiv.textContent = 
+                        `❌ Error (${response.status} ${response.statusText})\n\n` +
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                responseDiv.className = 'error';
+                responseDiv.style.display = 'block';
+                responseDiv.textContent = 
+                    `❌ Network Error\n\n${error.message}\n\n` +
+                    `Error Type: ${error.name}\n` +
+                    `Full Error: ${error}\n\n` +
+                    `Troubleshooting:\n` +
+                    `1. Make sure the server is running (XAMPP Apache)\n` +
+                    `2. Check the URL: ${url}\n` +
+                    `3. Open browser DevTools (F12) → Network tab to see the actual request\n` +
+                    `4. Try the cURL command below in your terminal\n` +
+                    `5. Make sure the API key exists in the rfid_readers table\n\n` +
+                    `Test URL directly: ${url}`;
+            }
+        }
+
+        // Initialize request details
+        updateRequestDetails();
+    </script>
+</body>
+</html>
+
